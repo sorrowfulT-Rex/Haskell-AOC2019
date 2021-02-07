@@ -1,3 +1,5 @@
+module Day3 where 
+
 import           Control.Applicative
 import           Data.List
 
