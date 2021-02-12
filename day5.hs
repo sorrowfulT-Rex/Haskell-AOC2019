@@ -17,7 +17,7 @@ day5Part1 = do
   where
   run arr = runST $ do
     arrST <- thaw arr :: ST s (STArray s Int Int)
-    res   <- execute arrST 0
+    res   <- execWithOneInput arrST 0 1
     return $ last res
 
 day5Part2 :: IO Int
@@ -27,7 +27,7 @@ day5Part2 = do
   where
   run arr = runST $ do
     arrST <- thaw arr :: ST s (STArray s Int Int)
-    res   <- execute' arrST 0
+    res   <- execWithOneInput arrST 0 5
     return $ last res
 
 readArrayMaybe :: (MArray a Int m) => a Int Int -> Int -> m (Maybe Int)
@@ -37,44 +37,29 @@ readArrayMaybe arrST index = do
     then return Nothing
     else readArray arrST index >>= return . Just    
 
-execute :: (MArray a Int m) => a Int Int -> Int -> m [Int]
-execute arrST i = do
-  instr <- readArray arrST i
-  let opcode = instr `mod` 10
-  if instr == 99
-    then return []
-    else case opcode of
-      3 -> do
-        a1 <- readArray arrST (i + 1)
-        writeArray arrST a1 1
-        execute arrST (i + 2)
-      4 -> do
-        a1 <- readArray arrST (i + 1)
-        s1 <- readArrayMaybe arrST a1
-        rt <- execute arrST (i + 2)
-        return $ (if instr - 4 == 0 then fromJust s1 else a1) : rt
-      _ -> do
-        a1 <- readArray arrST (i + 1)
-        a2 <- readArray arrST (i + 2)
-        a3 <- readArray arrST (i + 3)
-        let (o2, o1) = quotRem (instr `div` 100) 10
-        s1 <- readArrayMaybe arrST a1
-        s2 <- readArrayMaybe arrST a2
-        let (n1, n2) = (mx o1 a1 $ fromJust s1, mx o2 a2 $ fromJust s2)
-        writeArray arrST a3 $ getFunc opcode n1 n2
-        execute arrST (i + 4)
+execWithOneInput :: (MArray a Int m) => a Int Int -> Int -> Int -> m [Int]
+execWithOneInput arrST i input
+  = execUntilEnd i
   where
-    getFunc 1 = (+)
-    getFunc 2 = (*)
-    mx 1 x _  = x
-    mx 0 _ y  = y
+    execUntilEnd i = do
+      raw <- execUntilOutput arrST i $ cycle [input]
+      if isNothing raw
+        then return []
+        else do
+          let Just (i', n) = raw
+          rt <- execUntilEnd i'
+          return $ n : rt
 
-execute' :: (MArray a Int m) => a Int Int -> Int -> m [Int]
-execute' arrST i = do
+execUntilOutput :: (MArray a Int m) 
+  => a Int Int 
+  -> Int 
+  -> [Int] 
+  -> m (Maybe (Int, Int))
+execUntilOutput arrST i input = do
   instr <- readArray arrST i
   let opcode = instr `mod` 10
   if instr == 99
-    then return []
+    then return Nothing
     else execByOp opcode instr
   where
     getFunc 1        = (+)
@@ -87,13 +72,12 @@ execute' arrST i = do
     mx 0 _ y         = y
     execByOp 3 _     = do
       a1 <- readArray arrST (i + 1)
-      writeArray arrST a1 5
-      execute' arrST (i + 2)
+      writeArray arrST a1 (head input)
+      execUntilOutput arrST (i + 2) (tail input)
     execByOp 4 instr = do
       a1 <- readArray arrST (i + 1)
       s1 <- readArrayMaybe arrST a1
-      rt <- execute' arrST (i + 2)
-      return $ (if instr - 4 == 0 then fromJust s1 else a1) : rt
+      return $ Just (i + 2, if instr - 4 == 0 then fromJust s1 else a1)
     execByOp op instr
       | op == 1 || op == 2 = do
         a1 <- readArray arrST (i + 1)
@@ -104,7 +88,7 @@ execute' arrST i = do
         s2 <- readArrayMaybe arrST a2
         let (n1, n2) = (mx o1 a1 $ fromJust s1, mx o2 a2 $ fromJust s2)
         writeArray arrST a3 $ getFunc op n1 n2
-        execute' arrST (i + 4)
+        execUntilOutput arrST (i + 4) input
       | op == 5 || op == 6 = do
         a1 <- readArray arrST (i + 1)
         a2 <- readArray arrST (i + 2)
@@ -113,8 +97,8 @@ execute' arrST i = do
         s2 <- readArrayMaybe arrST a2
         let (n1, n2) = (mx o1 a1 $ fromJust s1, mx o2 a2 $ fromJust s2)
         if getBool op n1 n1
-          then execute' arrST (i + 3)
-          else execute' arrST n2
+          then execUntilOutput arrST (i + 3) input
+          else execUntilOutput arrST n2 input
       | otherwise          = do
         a1 <- readArray arrST (i + 1)
         a2 <- readArray arrST (i + 2)
@@ -124,4 +108,4 @@ execute' arrST i = do
         s2 <- readArrayMaybe arrST a2
         let (n1, n2) = (mx o1 a1 $ fromJust s1, mx o2 a2 $ fromJust s2)
         writeArray arrST a3 $ if getBool op n1 n2 then 1 else 0
-        execute' arrST (i + 4)
+        execUntilOutput arrST (i + 4) input

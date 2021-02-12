@@ -14,10 +14,6 @@ day3Part1 = do
   (w, w') <- day3Parser <$> readFile "day3.txt"
   return $ findClosestIntersectionDistance w w'
 
-foo = do
-  (w, w') <- day3Parser <$> readFile "day3.txt"
-  return (w, w')
-
 day3Part2 :: IO Int
 day3Part2 = do
   (w, w') <- day3Parser <$> readFile "day3.txt"
@@ -49,24 +45,22 @@ segments ws
       where
         (xSegs, ySegs) = segments' ws x (y + read len)
 
-xyInter :: [Segment] -> [Segment] -> [(Int, Int)]
-xyInter [] _
-      = []
-xyInter (s : segs) s'
-  = (inter' s s' ++ xyInter segs s') \\ [(0, 0)]
-inter' _ []
-  = []
-inter' s@(y, (xMin, xMax)) ((x, (yMin, yMax)) : segs)
-  | y < yMin  = inter' s segs
-  | x < xMin  = inter' s segs
-  | y > yMax  = inter' s segs
-  | x > xMax  = inter' s segs
-  | otherwise = (x, y) : inter' s segs
-
-
 intersections :: Wire -> Wire -> [(Int, Int)]
 intersections (s1, s2) (s1', s2')
   = xyInter s1 s2' ++ xyInter s1' s2
+  where
+    xyInter [] _
+          = []
+    xyInter (s : segs) s'
+      = (inter' s s' ++ xyInter segs s') \\ [(0, 0)]
+    inter' _ []
+      = []
+    inter' s@(y, (xMin, xMax)) ((x, (yMin, yMax)) : segs)
+      | y < yMin  = inter' s segs
+      | x < xMin  = inter' s segs
+      | y > yMax  = inter' s segs
+      | x > xMax  = inter' s segs
+      | otherwise = (x, y) : inter' s segs
 
 findClosestIntersectionDistance :: [String] -> [String] -> Int
 findClosestIntersectionDistance ws ws'
@@ -79,29 +73,26 @@ findStepsToIntersection ws ws'
   = minimum $ map (liftA2 (+) (findSteps ws) (findSteps ws')) inters
   where
     inters = intersections (segments ws) (segments ws')
-
-findSteps :: [String] -> (Int, Int) -> Int
-findSteps ws (x, y) 
-  = findSteps' 0 (0, 0) ws
-  where
-    findSteps' n (cX, cY) (('D' : len) : ws)
-      | canReach  = n + cY - y
-      | otherwise = findSteps' (n + read len) (cX, cY - read len) ws
+    findSteps ws (x, y) 
+      = findSteps' 0 (0, 0) ws
       where
-        canReach = cX == x && cY >= y && cY - read len <= y 
-    findSteps' n (cX, cY) (('L' : len) : ws)
-      | canReach  = n + cX - x
-      | otherwise = findSteps' (n + read len) (cX - read len, cY) ws
-      where
-        canReach = cY == y && cX >= x && cX - read len <= x 
-    findSteps' n (cX, cY) (('R' : len) : ws)
-      | canReach  = n - cX + x
-      | otherwise = findSteps' (n + read len) (cX + read len, cY) ws
-      where
-        canReach = cY == y && cX <= x && cX + read len >= x 
-    findSteps' n (cX, cY) (('U' : len) : ws)
-      | canReach  = n - cY + y
-      | otherwise = findSteps' (n + read len) (cX, cY + read len) ws
-      where
-        canReach = cX == x && cY <= y && cY + read len >= y
-
+        findSteps' n (cX, cY) (('D' : len) : ws)
+          | canReach  = n + cY - y
+          | otherwise = findSteps' (n + read len) (cX, cY - read len) ws
+          where
+            canReach = cX == x && cY >= y && cY - read len <= y 
+        findSteps' n (cX, cY) (('L' : len) : ws)
+          | canReach  = n + cX - x
+          | otherwise = findSteps' (n + read len) (cX - read len, cY) ws
+          where
+            canReach = cY == y && cX >= x && cX - read len <= x 
+        findSteps' n (cX, cY) (('R' : len) : ws)
+          | canReach  = n - cX + x
+          | otherwise = findSteps' (n + read len) (cX + read len, cY) ws
+          where
+            canReach = cY == y && cX <= x && cX + read len >= x 
+        findSteps' n (cX, cY) (('U' : len) : ws)
+          | canReach  = n - cY + y
+          | otherwise = findSteps' (n + read len) (cX, cY + read len) ws
+          where
+            canReach = cX == x && cY <= y && cY + read len >= y

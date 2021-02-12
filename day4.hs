@@ -17,7 +17,7 @@ day4Part1 = do
 day4Part2 :: IO Int
 day4Part2 = do
   (least : [most]) <- split '-' <$> readFile "day4.txt"
-  let f = (liftA2 (&&) ascTest adjTest') . intToDigit
+  let f = (liftA2 (&&) ascTest adjTestPart2) . intToDigit
   return $ length $ filter f [(read least)..(read most)]
 
 adjTest :: [Int] -> Bool
@@ -34,12 +34,12 @@ ascTest (x : x' : xs)
 ascTest _
   = True
 
-adjTest' :: [Int] -> Bool
-adjTest' [x, x']
+adjTestPart2 :: [Int] -> Bool
+adjTestPart2 [x, x']
  | x == x'   = True
  | otherwise = False
-adjTest' (x : x' : x'' : xs)
-  | x == x'   = (x /= x'') || adjTest' (dropWhile (== x) xs)
-  | otherwise = adjTest' (x' : x'' : xs)
-adjTest' _
+adjTestPart2 (x : x' : x'' : xs)
+  | x == x'   = (x /= x'') || adjTestPart2 (dropWhile (== x) xs)
+  | otherwise = adjTestPart2 (x' : x'' : xs)
+adjTestPart2 _
   = False
