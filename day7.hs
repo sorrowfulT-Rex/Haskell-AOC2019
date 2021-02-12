@@ -6,11 +6,11 @@ import           Control.Monad
 import           Control.Monad.ST
 import           Data.Array
 import           Data.Array.ST
-import           Data.List ((\\))
+import           Data.List
 import           Data.Maybe
 
-import           Day2 (fromList)
-import           Day5 (readArrayMaybe, execUntilOutput)
+import           Day5 (execUntilOutput)
+import           Helpers
 import           InputParser
 
 day7Part1 :: IO Int
@@ -43,18 +43,15 @@ tryCombination arr phases
     try [] n
       = n
     try (p : ps) n
-      = try ps (runST $ do
-        arrST <- thaw arr :: ST s (STArray s Int Int)
+      = try ps $ runST $ do
+        arrST <- thaw arr :: OneD s Int
         snd <$> fromJust <$> execUntilOutput arrST 0 [p, n]
-        )
-
-type TwoD s = ST s (STArray s Int (ST s (STArray s Int Int)))
 
 tryCombinationLooped :: Array Int Int -> [Int] -> Int
 tryCombinationLooped arr phases 
   = runST $ do
-    arrSTST  <- newArray (0, 4) $ thaw arr :: TwoD s
-    cursorST <- thaw $ fromList (replicate 5 0) :: ST s (STArray s Int Int)
+    arrSTST  <- newArray (0, 4) $ thaw arr :: TwoD s Int
+    cursorST <- thaw $ fromList (replicate 5 0) :: OneD s Int
     try True 0 0 0 arrSTST cursorST
   where
     try _ 5 _ m arrSTST cursorST

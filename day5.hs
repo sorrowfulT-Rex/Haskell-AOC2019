@@ -7,7 +7,7 @@ import           Data.Array
 import           Data.Array.ST
 import           Data.Maybe
 
-import           Day2 (fromList)
+import           Helpers
 import           InputParser
 
 day5Part1 :: IO Int
@@ -16,7 +16,7 @@ day5Part1 = do
   return $ run $ fromList $ read <$> raw
   where
   run arr = runST $ do
-    arrST <- thaw arr :: ST s (STArray s Int Int)
+    arrST <- thaw arr :: OneD s Int
     res   <- execWithOneInput arrST 0 1
     return $ last res
 
@@ -26,16 +26,9 @@ day5Part2 = do
   return $ run $ fromList $ read <$> raw
   where
   run arr = runST $ do
-    arrST <- thaw arr :: ST s (STArray s Int Int)
+    arrST <- thaw arr :: OneD s Int
     res   <- execWithOneInput arrST 0 5
     return $ last res
-
-readArrayMaybe :: (MArray a Int m) => a Int Int -> Int -> m (Maybe Int)
-readArrayMaybe arrST index = do
-  (inf, sup) <- getBounds arrST
-  if index > sup || index < inf 
-    then return Nothing
-    else readArray arrST index >>= return . Just    
 
 execWithOneInput :: (MArray a Int m) => a Int Int -> Int -> Int -> m [Int]
 execWithOneInput arrST i input

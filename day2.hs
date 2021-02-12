@@ -6,11 +6,8 @@ import           Control.Monad.ST
 import           Data.Array
 import           Data.Array.ST
 
+import           Helpers
 import           InputParser
-
-fromList :: [a] -> Array Int a
-fromList xs
-  = array (0, length xs - 1) $ zip [0..] xs
 
 day2Part1 :: IO Int
 day2Part1 = do
@@ -18,7 +15,7 @@ day2Part1 = do
   return $ run $ fromList $ read <$> raw
   where
   run arr = runST $ do
-    arrST <- thaw arr :: ST s (STArray s Int Int)
+    arrST <- thaw arr :: OneD s Int
     program1202 arrST
     execute arrST 0
     readArray arrST 0
@@ -31,7 +28,7 @@ day2Part2 = do
   where
     run 100 _ _ = error ""
     run n v arr = runST $ do
-      arrST <- thaw arr :: ST s (STArray s Int Int)
+      arrST <- thaw arr :: OneD s Int
       programInit n v arrST
       execute arrST 0
       res   <- readArray arrST 0
