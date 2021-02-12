@@ -2,6 +2,7 @@
 
 module Day7 where
 
+import           Control.Monad
 import           Control.Monad.ST
 import           Data.Array
 import           Data.Array.ST
@@ -26,7 +27,8 @@ findMaxSignal :: Array Int Int -> Int
 findMaxSignal = maximum . (<$> getPerm [0, 1, 2, 3, 4]) . tryCombination
 
 findMaxSignalLooped :: Array Int Int -> Int
-findMaxSignalLooped = maximum . (<$> getPerm [5, 6, 7, 8, 9]) . tryCombinationLooped
+findMaxSignalLooped 
+  = maximum . (<$> getPerm [5, 6, 7, 8, 9]) . tryCombinationLooped
 
 getPerm :: [Int] -> [[Int]]
 getPerm []
@@ -46,27 +48,25 @@ tryCombination arr phases
         snd <$> fromJust <$> execUntilOutput arrST 0 [p, n]
         )
 
-type TwoD s = ST s (STArray s Int (Array Int Int))
+type TwoD s = ST s (STArray s Int (ST s (STArray s Int Int)))
 
 tryCombinationLooped :: Array Int Int -> [Int] -> Int
 tryCombinationLooped arr phases 
   = runST $ do
-    arrSTST  <- thaw $ fromList (replicate 5 arr) :: TwoD s
+    arrSTST  <- newArray (0, 4) $ thaw arr :: TwoD s
     cursorST <- thaw $ fromList (replicate 5 0) :: ST s (STArray s Int Int)
     try True 0 0 0 arrSTST cursorST
   where
     try _ 5 _ m arrSTST cursorST
-      =  try False 0 m m arrSTST cursorST
+      = try False 0 m m arrSTST cursorST
     try f i n m arrSTST cursorST = do
-      arr   <- readArray arrSTST i
+      arrST <- join $ readArray arrSTST i
       addr  <- readArray cursorST i
-      arrST <- thaw arr :: ST s (STArray s Int Int)
       raw   <- execUntilOutput arrST addr $ if f then [phases !! i, m] else [m]
       if isNothing raw
         then return m
         else do
           let Just (c, res) = raw
-          newArr <- freeze arrST
-          writeArray arrSTST i newArr
+          writeArray arrSTST i (return arrST)
           writeArray cursorST i c
           try f (i + 1) n res arrSTST cursorST
