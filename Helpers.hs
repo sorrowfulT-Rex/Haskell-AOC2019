@@ -30,3 +30,18 @@ readArrayMaybe arrST index = do
 minimumOn :: (Ord b, Foldable f) => (a -> b) -> f a -> a
 minimumOn f xs
   = minimumBy ((. f) . compare . f) xs
+
+
+-- List
+
+headMaybe :: [a] -> Maybe a
+headMaybe []
+  = Nothing
+headMaybe xs
+  = Just $ head xs
+
+tailMaybe :: [a] -> Maybe [a]
+tailMaybe []
+  = Nothing
+tailMaybe xs
+  = Just $ tail xs
