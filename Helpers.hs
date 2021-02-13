@@ -5,6 +5,7 @@ module Helpers where
 import           Control.Monad.ST
 import           Data.Array
 import           Data.Array.ST
+import           Data.List
 import           Data.Maybe
 
 -- Array
@@ -22,3 +23,10 @@ readArrayMaybe arrST index = do
   if index > sup || index < inf 
     then return Nothing
     else readArray arrST index >>= return . Just
+
+
+-- Comparison
+
+minimumOn :: (Ord b, Foldable f) => (a -> b) -> f a -> a
+minimumOn f xs
+  = minimumBy ((. f) . compare . f) xs

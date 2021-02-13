@@ -12,3 +12,14 @@ split x xs
   | otherwise = xs' : split x (tail xs'')
   where
     (xs', xs'') = break (== x) xs
+
+chunk :: Int -> [a] -> [[a]]
+chunk n xs
+  = chunk' xs
+  where
+    chunk' []
+      = []
+    chunk' xs
+      = x : chunk' xs'
+      where
+        (x, xs') = splitAt n xs
