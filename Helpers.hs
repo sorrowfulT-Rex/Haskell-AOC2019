@@ -28,8 +28,12 @@ readArrayMaybe arrST index = do
 -- Comparison
 
 minimumOn :: (Ord b, Foldable f) => (a -> b) -> f a -> a
-minimumOn f xs
-  = minimumBy ((. f) . compare . f) xs
+minimumOn f
+  = minimumBy ((. f) . compare . f)
+
+maximumOn :: (Ord b, Foldable f) => (a -> b) -> f a -> a
+maximumOn f
+  = maximumBy ((. f) . compare . f)
 
 
 -- List
