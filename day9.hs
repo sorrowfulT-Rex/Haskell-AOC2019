@@ -10,7 +10,6 @@ import           Data.Map
 
 import           Helpers hiding (fromList)
 import           InputParser
-
 day9Part1 :: IO [Integer]
 day9Part1 = do
   raw <- readBy ',' "day9.txt"
@@ -37,9 +36,6 @@ data IntCode = IntCode
 initIntCode :: Map Integer Integer -> IntCode
 initIntCode = flip (flip IntCode 0) 0
 
-initSeg :: OutputSegment
-initSeg = Segment False Nothing
-
 decode :: Int -> (Int, Int, Int, Int)
 decode n
   = (r, r', r'', q'')
@@ -49,29 +45,25 @@ decode n
     (q'', r'') = quotRem q' 10
 
 execFromStart :: [Integer] -> IntCode -> [Integer]
-execFromStart = evalState . flip execWithOutput initSeg
+execFromStart = evalState . execFully
 
-execWithOutput :: [Integer] 
-  -> OutputSegment 
-  -> State IntCode [Integer]
-execWithOutput inputs seg = do
-  segMaybe <- execOnce (headMaybe inputs) seg
+execFully :: [Integer] -> State IntCode [Integer]
+execFully inputs = do
+  segMaybe <- execOnce (headMaybe inputs)
   if isNothing segMaybe
     then return []
     else do
       let Just (Segment f cV) = segMaybe
       st <- get
       rt <- if f 
-        then execWithOutput (tail inputs) (Segment f cV)
-        else execWithOutput inputs (Segment f cV)
+        then execFully (tail inputs)
+        else execFully inputs
       return $ if isNothing cV
         then rt
         else (fromJust cV) : rt
 
-execOnce :: Maybe Integer 
-  -> OutputSegment 
-  -> State IntCode (Maybe OutputSegment)
-execOnce input seg = do
+execOnce :: Maybe Integer -> State IntCode (Maybe OutputSegment)
+execOnce input = do
   intCode <- get
   let instr = fromIntegral $ (tape intCode) ! (curIndex intCode)
   if instr == 99
