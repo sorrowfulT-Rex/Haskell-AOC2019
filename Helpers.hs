@@ -2,9 +2,11 @@
 
 module Helpers where
 
+import           Control.Monad
 import           Control.Monad.ST
 import           Data.Array
 import           Data.Array.ST
+import           Data.Char
 import           Data.List
 import           Data.Maybe
 
@@ -50,3 +52,14 @@ tailMaybe []
   = Nothing
 tailMaybe xs
   = Just $ tail xs
+
+formatImage :: [String] -> IO ()
+formatImage strs
+  = forM_ strs printRow
+  where
+    printRow ""
+      = putStr "\n"
+    printRow ('0' : cs)
+      = putStr " " >> printRow cs
+    printRow ('1' : cs)
+      = putStr ([chr 9608]) >> printRow cs

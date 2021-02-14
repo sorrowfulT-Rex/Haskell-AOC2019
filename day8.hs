@@ -22,7 +22,7 @@ day8Part2 :: IO ()
 day8Part2 = do
   raw <- readFile "day8.txt"
   let theOne = mergeLayers $ chunk layersize raw
-  formatImage $ toList theOne
+  formatImage $ chunk width $ toList theOne
 
 width, height, layersize :: Int
 width     = 25
@@ -59,14 +59,3 @@ mergeLayers layers
       | otherwise     = merged i (n + 1)
       where
         colour = layersArr ! n ! i
-
-formatImage :: Layer -> IO ()
-formatImage layer
-  = forM_ (chunk width layer) printRow
-  where
-    printRow ""
-      = putStr "\n"
-    printRow ('0' : cs)
-      = putStr " " >> printRow cs
-    printRow ('1' : cs)
-      = putStr ([chr 9608]) >> printRow cs
