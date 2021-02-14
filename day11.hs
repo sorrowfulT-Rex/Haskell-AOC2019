@@ -18,7 +18,6 @@ type RobotPainting = Map (Integer, Integer) Integer
 data Direction = UP | DOWN | LEFT | RIGHT
   deriving (Eq, Ord)
 
-
 turnLeft, turnRight :: Direction -> Direction
 turnLeft UP     = LEFT
 turnLeft LEFT   = DOWN
@@ -41,7 +40,8 @@ day11Part1 = do
 -- day11Part2 :: IO Int
 day11Part2 = do
   raw <- readBy ',' "day11.txt"
-  formatImage $ robotDrawing $ robot 1 $ initIntCode $ fromList $ zip [0..] (read <$> raw)
+  let painting = robot 1 $ initIntCode $ fromList $ zip [0..] (read <$> raw)
+  formatImage $ robotPaintingParser painting
 
 robot :: Integer -> IntCode -> RobotPainting
 robot input intCode 
@@ -82,8 +82,8 @@ robotMove ((x, y), dir) turn
   where
     dir' = turnWithInstr turn dir
 
-robotDrawing :: RobotPainting -> [String]
-robotDrawing painting
+robotPaintingParser :: RobotPainting -> [String]
+robotPaintingParser painting
   = chunk (fromIntegral $ xMax - xMin + 1) $ colourMap <$> field
   where
     colourMap p

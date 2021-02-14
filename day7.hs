@@ -50,20 +50,19 @@ tryCombination arr phases
 tryCombinationLooped :: Array Int Int -> [Int] -> Int
 tryCombinationLooped arr phases 
   = runST $ do
-    arrSTST  <- newArray (0, 4) $ thaw arr :: TwoD s Int
-    cursorST <- thaw $ fromList (replicate 5 0) :: OneD s Int
+    arrSTST  <- newST1DArrayM $ replicate 5 (thaw arr)
+    cursorST <- newST1DArray $ replicate 5 0
     try True 0 0 0 arrSTST cursorST
   where
     try _ 5 _ m arrSTST cursorST
       = try False 0 m m arrSTST cursorST
     try f i n m arrSTST cursorST = do
-      arrST <- join $ readArray arrSTST i
+      arrST <- readArray arrSTST i
       addr  <- readArray cursorST i
       raw   <- execUntilOutput arrST addr $ if f then [phases !! i, m] else [m]
       if isNothing raw
         then return m
         else do
           let Just (c, res) = raw
-          writeArray arrSTST i (return arrST)
           writeArray cursorST i c
           try f (i + 1) n res arrSTST cursorST

@@ -13,20 +13,20 @@ import           InputParser
 day5Part1 :: IO Int
 day5Part1 = do
   raw <- readBy ',' "day5.txt"
-  return $ run $ fromList $ read <$> raw
+  return $ run $ read <$> raw
   where
-  run arr = runST $ do
-    arrST <- thaw arr :: OneD s Int
+  run ls = runST $ do
+    arrST <- newST1DArray ls
     res   <- execWithOneInput arrST 0 1
     return $ last res
 
 day5Part2 :: IO Int
 day5Part2 = do
   raw <- readBy ',' "day5.txt"
-  return $ run $ fromList $ read <$> raw
+  return $ run $ read <$> raw
   where
-  run arr = runST $ do
-    arrST <- thaw arr :: OneD s Int
+  run ls = runST $ do
+    arrST <- newST1DArray ls
     res   <- execWithOneInput arrST 0 5
     return $ last res
 

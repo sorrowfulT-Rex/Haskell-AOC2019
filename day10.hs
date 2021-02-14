@@ -92,11 +92,10 @@ orderedValidRays a b
 find200th :: (Int, Int) -> AstroidMap -> (Int, Int)
 find200th xy@(x, y) astrs
   = runST $ do 
-    arrST <- thaw others :: OneD s (Seq (Int, Int))
+    arrST <- newST1DArray others
     find 1 0 arrST
   where
-    others 
-      = H.fromList $ S.fromList <$> flip (linearSearchAll xy) astrs <$> valids
+    others = S.fromList <$> flip (linearSearchAll xy) astrs <$> valids
     valids 
       = orderedValidRays (-x, width astrs - x - 1) (-y, height astrs - y - 1)
     find n i arrST

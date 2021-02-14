@@ -14,11 +14,22 @@ import           Data.Maybe
 -- Array
 
 type OneD s e = ST s (STArray s Int e)
-type TwoD s e = ST s (STArray s Int (OneD s e))
+type TwoD s e = ST s (STArray s Int (STArray s Int e))
 
 fromList :: [a] -> Array Int a
 fromList xs
   = array (0, length xs - 1) $ zip [0..] xs
+
+newST1DArray :: [a] -> OneD s a
+newST1DArray = thaw . fromList
+
+newST1DArrayM :: [OneD s a] -> TwoD s a
+newST1DArrayM arrSTs = do
+  info <- sequence arrSTs
+  newST1DArray info
+
+newST2DArray :: [[a]] -> ST s (STArray s Int (STArray s Int a))
+newST2DArray = newST1DArrayM . fmap newST1DArray
 
 readArrayMaybe :: (MArray a Int m) => a Int Int -> Int -> m (Maybe Int)
 readArrayMaybe arrST index = do
@@ -52,6 +63,9 @@ tailMaybe []
   = Nothing
 tailMaybe xs
   = Just $ tail xs
+
+
+-- Misc.
 
 formatImage :: [String] -> IO ()
 formatImage strs

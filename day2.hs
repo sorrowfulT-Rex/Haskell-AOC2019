@@ -12,10 +12,10 @@ import           InputParser
 day2Part1 :: IO Int
 day2Part1 = do
   raw <- readBy ',' "day2.txt"
-  return $ run $ fromList $ read <$> raw
+  return $ run $ read <$> raw
   where
-  run arr = runST $ do
-    arrST <- thaw arr :: OneD s Int
+  run ls = runST $ do
+    arrST <- newST1DArray ls
     program1202 arrST
     execute arrST 0
     readArray arrST 0
@@ -23,20 +23,20 @@ day2Part1 = do
 day2Part2 :: IO Int
 day2Part2 = do
   raw <- readBy ',' "day2.txt"
-  let (n, v) = run 0 0 $ fromList $ read <$> raw
+  let (n, v) = run 0 0 $ read <$> raw
   return $ 100 * n + v
   where
     run 100 _ _ = error ""
-    run n v arr = runST $ do
-      arrST <- thaw arr :: OneD s Int
+    run n v ls = runST $ do
+      arrST <- newST1DArray ls
       programInit n v arrST
       execute arrST 0
       res   <- readArray arrST 0
       return $ if res == 19690720
         then (n, v)
         else if v == 99
-          then run (n + 1) 0 arr
-          else run n (v + 1) arr
+          then run (n + 1) 0 ls
+          else run n (v + 1) ls
 
 program1202 :: (MArray a Int m) => a Int Int -> m ()
 program1202 = programInit 12 2
