@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE BangPatterns #-}
 
 module Day9 where 
 
@@ -12,29 +11,34 @@ import           Data.Map
 import           Helpers hiding (fromList)
 import           InputParser
 
-import           Debug.Trace
-
 day9Part1 :: IO [Integer]
 day9Part1 = do
   raw <- readBy ',' "day9.txt"
-  return $ execFromStart [1] $ fromList $ zip [0..] (read <$> raw)
+  return $ execFromStart [1] $ initIntCode $ fromList $ zip [0..] (read <$> raw)
 
 day9Part2 :: IO [Integer]
 day9Part2 = do
   raw <- readBy ',' "day9.txt"
-  return $ execFromStart [2] $ fromList $ zip [0..] (read <$> raw)
+  return $ execFromStart [2] $ initIntCode $ fromList $ zip [0..] (read <$> raw)
 
 -- This time changing to using a map instead of mutable array
 
 data OutputSegment = Segment 
   { consumesInput :: Bool
-  , curIndex :: Integer
   , curValue :: Maybe Integer
+  }
+
+data IntCode = IntCode
+  { tape :: Map Integer Integer
+  , curIndex :: Integer
   , tempIndex :: Integer
   }
 
+initIntCode :: Map Integer Integer -> IntCode
+initIntCode = flip (flip IntCode 0) 0
+
 initSeg :: OutputSegment
-initSeg = Segment False 0 Nothing 0
+initSeg = Segment False Nothing
 
 decode :: Int -> (Int, Int, Int, Int)
 decode n
@@ -44,89 +48,98 @@ decode n
     (q', r')   = quotRem (q `div` 10) 10
     (q'', r'') = quotRem q' 10
 
-execFromStart :: [Integer] -> Map Integer Integer -> [Integer]
-execFromStart = evalState . flip execFully initSeg
+execFromStart :: [Integer] -> IntCode -> [Integer]
+execFromStart = evalState . flip execWithOutput initSeg
 
-execFully :: [Integer] 
+execWithOutput :: [Integer] 
   -> OutputSegment 
-  -> State (Map Integer Integer) [Integer]
-execFully inputs seg = do
+  -> State IntCode [Integer]
+execWithOutput inputs seg = do
   segMaybe <- execOnce (headMaybe inputs) seg
   if isNothing segMaybe
     then return []
     else do
-      let Just (Segment f cI cV tI) = segMaybe
+      let Just (Segment f cV) = segMaybe
+      st <- get
       rt <- if f 
-        then execFully (tail inputs) (Segment f cI cV tI)
-        else execFully inputs (Segment f cI cV tI)
+        then execWithOutput (tail inputs) (Segment f cV)
+        else execWithOutput inputs (Segment f cV)
       return $ if isNothing cV
         then rt
         else (fromJust cV) : rt
 
 execOnce :: Maybe Integer 
   -> OutputSegment 
-  -> State (Map Integer Integer) (Maybe OutputSegment)
+  -> State IntCode (Maybe OutputSegment)
 execOnce input seg = do
   intCode <- get
-  let instr = fromIntegral $ intCode ! index
+  let instr = fromIntegral $ (tape intCode) ! (curIndex intCode)
   if instr == 99
     then return Nothing
-    else Just <$> (execByOp $ decode instr)
+    else Just <$> execByOp (decode instr)
   where
-    mx 1 x _            = x
-    mx 0 _ y            = y
-    mx 2 _ y            = y + tempI
-    index               = curIndex seg
-    tempI               = tempIndex seg
+    mx 1 x _ _             = x
+    mx 0 _ y _             = y
+    mx 2 _ y z             = y + z
     execByOp (3, m, _, _)  = do
-      intCode <- get
-      let a1   = index + 1
-      let s1   = maybe 0 id $ intCode !? a1
-      let addr = maybe 0 id $ intCode !? (mx m a1 s1)
-      put $ insert (mx m a1 s1) (fromJust input) intCode
-      return $ Segment True (index + 2) Nothing tempI
+      IntCode tape cI tI <- get
+      let a1   = cI + 1
+      let s1   = maybe 0 id $ tape !? a1
+      updateTape $ insert (mx m a1 s1 tI) (fromJust input)
+      newIndices (cI + 2) tI
+      return $ Segment True Nothing
     execByOp (4, m, _, _)  = do
-      intCode <- get
-      let a1  = index + 1
-      let s1  = maybe 0 id $ intCode !? a1
-      let out = maybe 0 id $ intCode !? (mx m a1 s1)
-      return $ Segment False (index + 2) (Just out) tempI
+      IntCode tape cI tI <- get
+      let a1  = cI + 1
+      let s1  = maybe 0 id $ tape !? a1
+      let out = maybe 0 id $ tape !? (mx m a1 s1 tI)
+      newIndices (cI + 2) tI
+      return $ Segment False (Just out)
     execByOp (9, m, _, _)  = do
-      intCode <- get
-      let a1  = index + 1
-      let s1  = maybe 0 id $ intCode !? a1
-      let sft = maybe 0 id $ intCode !? (mx m a1 s1)
-      return $ Segment False (index + 2) Nothing (tempI + sft)
+      IntCode tape cI tI <- get
+      let a1  = cI + 1
+      let s1  = maybe 0 id $ tape !? a1
+      let sft = maybe 0 id $ tape !? (mx m a1 s1 tI)
+      newIndices (cI + 2) (tI + sft)
+      return $ Segment False Nothing
     execByOp (n, m, m', o) = do
-      intCode <- get
-      let a1 = index + 1
-      let a2 = index + 2
-      let a3 = index + 3
-      let s1 = maybe 0 id $ intCode !? a1
-      let s2 = maybe 0 id $ intCode !? a2
-      let s3 = maybe 0 id $ intCode !? a3
-      let m1 = maybe 0 id $ intCode !? (mx m a1 s1)
-      let m2 = maybe 0 id $ intCode !? (mx m' a2 s2)
-      let m3 = mx o a3 s3
+      IntCode tape cI tI <- get
+      let a1 = cI + 1
+      let a2 = cI + 2
+      let a3 = cI + 3
+      let s1 = maybe 0 id $ tape !? a1
+      let s2 = maybe 0 id $ tape !? a2
+      let s3 = maybe 0 id $ tape !? a3
+      let m1 = maybe 0 id $ tape !? (mx m a1 s1 tI)
+      let m2 = maybe 0 id $ tape !? (mx m' a2 s2 tI)
+      let m3 = mx o a3 s3 tI
       case n of
         1 -> do
-          put $ insert m3 (m1 + m2) intCode
-          return $ Segment False (index + 4) Nothing tempI
+          updateTape $ insert m3 (m1 + m2)
+          newIndices (cI + 4) tI
         2 -> do
-          put $ insert m3 (m1 * m2) intCode
-          return $ Segment False (index + 4) Nothing tempI
-        5 -> return $ if m1 == 0
-          then Segment False (index + 3) Nothing tempI
-          else Segment False m2 Nothing tempI
-        6 -> return $ if m1 /= 0
-          then Segment False (index + 3) Nothing tempI
-          else Segment False m2 Nothing tempI
-        7 -> put (if m1 < m2
-          then insert m3 1 intCode
-          else insert m3 0 intCode
-          ) >> return (Segment False (index + 4) Nothing tempI)
-        8 -> put (if m1 == m2
-          then insert m3 1 intCode
-          else insert m3 0 intCode
-          ) >> return (Segment False (index + 4) Nothing tempI)
-        _ -> return $ error "Unknown Instruction!"
+          updateTape $ insert m3 (m1 * m2)
+          newIndices (cI + 4) tI
+        5 -> if m1 == 0
+          then newIndices (cI + 3) tI
+          else newIndices m2 tI
+        6 -> if m1 /= 0
+          then newIndices (cI + 3) tI
+          else newIndices m2 tI
+        7 -> if m1 < m2
+          then updateTape (insert m3 1) >> newIndices (cI + 4) tI
+          else updateTape (insert m3 0) >> newIndices (cI + 4) tI
+        8 -> if m1 == m2
+          then updateTape (insert m3 1) >> newIndices (cI + 4) tI
+          else updateTape (insert m3 0) >> newIndices (cI + 4) tI
+      return $ Segment False Nothing
+
+updateTape :: (Map Integer Integer -> Map Integer Integer) -> State IntCode ()
+updateTape f = do
+  IntCode tape cI tI <- get
+  put $ IntCode (f tape) cI tI
+
+newIndices :: Integer -> Integer -> State IntCode ()
+newIndices cI tI = do
+  IntCode tape _ _ <- get
+  put $ IntCode tape cI tI

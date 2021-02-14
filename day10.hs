@@ -28,7 +28,7 @@ day10Part2 = do
   raw <- readByLines "day10.txt"
   let astrs  = day10Parser raw
   let spot   = maxSpot astrs
-  let (x, y) =find200th spot astrs
+  let (x, y) = find200th spot astrs
   return $ x * 100 + y
 
 height, width :: AstroidMap -> Int

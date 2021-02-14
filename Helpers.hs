@@ -8,6 +8,7 @@ import           Data.Array.ST
 import           Data.List
 import           Data.Maybe
 
+
 -- Array
 
 type OneD s e = ST s (STArray s Int e)
