@@ -20,13 +20,14 @@ fromList :: [a] -> Array Int a
 fromList xs
   = array (0, length xs - 1) $ zip [0..] xs
 
+thawST :: Array Int a -> OneD s a
+thawST = thaw
+
 newST1DArray :: [a] -> OneD s a
 newST1DArray = thaw . fromList
 
 newST1DArrayM :: [OneD s a] -> TwoD s a
-newST1DArrayM arrSTs = do
-  info <- sequence arrSTs
-  newST1DArray info
+newST1DArrayM = (>>= newST1DArray) . sequence
 
 newST2DArray :: [[a]] -> ST s (STArray s Int (STArray s Int a))
 newST2DArray = newST1DArrayM . fmap newST1DArray

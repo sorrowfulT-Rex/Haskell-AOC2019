@@ -44,7 +44,7 @@ tryCombination arr phases
       = n
     try (p : ps) n
       = try ps $ runST $ do
-        arrST <- thaw arr :: OneD s Int
+        arrST <- thawST arr
         snd <$> fromJust <$> execUntilOutput arrST 0 [p, n]
 
 tryCombinationLooped :: Array Int Int -> [Int] -> Int
