@@ -21,10 +21,10 @@ type STVec1D s e = STArray s Int e
 type STVec2D s e = STArray s Int (STVec1D s e)
 type STMat1D s e = STArray s (Int, Int) e
 
-thawST :: Vec1D a -> ST s (STVec1D s a)
+thawST :: (Ix i) => Array i e -> ST s (STArray s i e)
 thawST = thaw
 
-freezeST :: STVec1D s a -> ST s (Vec1D a)
+freezeST :: (Ix i) => STArray s i e -> ST s (Array i e)
 freezeST = freeze
 
 newVec1D :: Foldable f => f a -> Vec1D a
@@ -47,12 +47,32 @@ newSTVec2D :: (Functor f1, Foldable f1, Foldable f2)
   -> ST s (STVec2D s a)
 newSTVec2D = newSTM . newVec1D . fmap newSTVec1D
 
+-- Pre: all rows have the same length
+newMat1D :: (Functor f1, Foldable f1, Foldable f2) => f1 (f2 a) -> Mat1D a
+newMat1D mat
+  = array ((0, 0), (length mat - 1, length (head mat') - 1)) zipped
+  where
+    mat'   = toList mat
+    zipped = zip [0..] mat' >>= drag
+    drag (i, row)
+      = map (\(j, ele) -> ((i, j), ele)) $ zip [0..] (toList row)
+
+newSTMat1D :: (Functor f1, Foldable f1, Foldable f2) 
+  => f1 (f2 a) 
+  -> ST s (STMat1D s a)
+newSTMat1D = thaw . newMat1D
+
 readArrayMaybe :: (MArray a Int m) => a Int Int -> Int -> m (Maybe Int)
 readArrayMaybe arrST index = do
   (inf, sup) <- getBounds arrST
   if index > sup || index < inf 
     then return Nothing
     else readArray arrST index >>= return . Just
+
+adjustArray :: (MArray a e m, Ix i) => a i e -> i -> (e -> e) -> m ()
+adjustArray arrST i f = do
+  cur <- readArray arrST i
+  writeArray arrST i $ f cur
 
 
 -- Comparison
