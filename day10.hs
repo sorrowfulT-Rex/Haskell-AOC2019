@@ -10,23 +10,20 @@ import           Data.Maybe
 
 import           Data.Sequence as S (Seq(..), deleteAt, fromList, lookup)
 
-import           Helpers as H
+import           Helpers
 import           InputParser
 
 type AstroidMap = Array Int (Array Int Char)
 
-day10Parser :: [String] -> AstroidMap
-day10Parser = H.fromList . fmap H.fromList
-
 day10Part1 :: IO Int
 day10Part1 = do
   raw <- readByLines "day10.txt"
-  return $ maxSearch $ day10Parser raw
+  return $ maxSearch $ newVec2D raw
 
 day10Part2 :: IO Int
 day10Part2 = do
   raw <- readByLines "day10.txt"
-  let astrs  = day10Parser raw
+  let astrs  = newVec2D raw
   let spot   = maxSpot astrs
   let (x, y) = find200th spot astrs
   return $ x * 100 + y
@@ -92,7 +89,7 @@ orderedValidRays a b
 find200th :: (Int, Int) -> AstroidMap -> (Int, Int)
 find200th xy@(x, y) astrs
   = runST $ do 
-    arrST <- newST1DArray others
+    arrST <- newSTVec1D others
     find 1 0 arrST
   where
     others = S.fromList <$> flip (linearSearchAll xy) astrs <$> valids

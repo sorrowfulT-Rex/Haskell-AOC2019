@@ -7,30 +7,45 @@ import           Control.Monad.ST
 import           Data.Array
 import           Data.Array.ST
 import           Data.Char
+import           Data.Foldable
 import           Data.List
 import           Data.Maybe
 
 
 -- Array
 
-type OneD s e = ST s (STArray s Int e)
-type TwoD s e = ST s (STArray s Int (STArray s Int e))
+type Vec1D e     = Array Int e
+type Vec2D e     = Array Int (Vec1D e)
+type Mat1D e     = Array (Int, Int) e
+type STVec1D s e = STArray s Int e
+type STVec2D s e = STArray s Int (STVec1D s e)
+type STMat1D s e = STArray s (Int, Int) e
 
-fromList :: [a] -> Array Int a
-fromList xs
-  = array (0, length xs - 1) $ zip [0..] xs
-
-thawST :: Array Int a -> OneD s a
+thawST :: Vec1D a -> ST s (STVec1D s a)
 thawST = thaw
 
-newST1DArray :: [a] -> OneD s a
-newST1DArray = thaw . fromList
+freezeST :: STVec1D s a -> ST s (Vec1D a)
+freezeST = freeze
 
-newST1DArrayM :: [OneD s a] -> TwoD s a
-newST1DArrayM = (>>= newST1DArray) . sequence
+newVec1D :: Foldable f => f a -> Vec1D a
+newVec1D xs
+  = array (0, length xs - 1) $ zip [0..] (toList xs)
 
-newST2DArray :: [[a]] -> ST s (STArray s Int (STArray s Int a))
-newST2DArray = newST1DArrayM . fmap newST1DArray
+newVec2D :: (Functor f1, Foldable f1, Foldable f2) => f1 (f2 a) -> Vec2D a
+newVec2D = newVec1D . fmap newVec1D
+
+newSTVec1D :: Foldable f => f a -> ST s (STVec1D s a)
+newSTVec1D = thaw . newVec1D
+
+newSTM :: (Ix i1, Ix i2) 
+  => Array i1 (ST s (STArray s i2 a)) 
+  -> ST s (STArray s i1 (STArray s i2 a))
+newSTM = (>>= thaw) . sequence
+
+newSTVec2D :: (Functor f1, Foldable f1, Foldable f2) 
+  => f1 (f2 a) 
+  -> ST s (STVec2D s a)
+newSTVec2D = newSTM . newVec1D . fmap newSTVec1D
 
 readArrayMaybe :: (MArray a Int m) => a Int Int -> Int -> m (Maybe Int)
 readArrayMaybe arrST index = do

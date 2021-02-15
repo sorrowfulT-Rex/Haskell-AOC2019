@@ -16,7 +16,7 @@ day5Part1 = do
   return $ run $ read <$> raw
   where
   run ls = runST $ do
-    arrST <- newST1DArray ls
+    arrST <- newSTVec1D ls
     res   <- execWithOneInput arrST 0 1
     return $ last res
 
@@ -26,7 +26,7 @@ day5Part2 = do
   return $ run $ read <$> raw
   where
   run ls = runST $ do
-    arrST <- newST1DArray ls
+    arrST <- newSTVec1D ls
     res   <- execWithOneInput arrST 0 5
     return $ last res
 

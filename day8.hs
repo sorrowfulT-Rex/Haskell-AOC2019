@@ -32,7 +32,7 @@ layersize = width * height
 layerNumberCount :: Layer -> Array Int Int
 layerNumberCount layer
   = runST $ do
-    arrST <- newST1DArray $ replicate 3 0
+    arrST <- newSTVec1D $ replicate 3 0
     forM_ layer $ \ch -> do
       let addr = ord ch - ord '0'
       s1 <- readArray arrST addr
@@ -46,12 +46,12 @@ leastZeros arrs
 mergeLayers :: [Layer] -> Array Int Char
 mergeLayers layers
   = runST $ do
-    arrST <- newST1DArray $ replicate layersize '2'
+    arrST <- newSTVec1D $ replicate layersize '2'
     forM_ [0..(layersize - 1)] $ \i -> do
       writeArray arrST i (merged i 0)
     freeze arrST
   where
-    layersArr = fromList $ fromList <$> layers
+    layersArr = newVec2D layers
     layerNum  = length layersArr
     merged i n
       | n == layerNum = '2'

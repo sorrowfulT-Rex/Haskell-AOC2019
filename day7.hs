@@ -16,12 +16,12 @@ import           InputParser
 day7Part1 :: IO Int
 day7Part1 = do
   raw <- readBy ',' "day7.txt"
-  return $ findMaxSignal $ fromList $ read <$> raw
+  return $ findMaxSignal $ newVec1D $ read <$> raw
 
 day7Part2 :: IO Int
 day7Part2 = do
   raw <- readBy ',' "day7.txt"
-  return $ findMaxSignalLooped $ fromList $ read <$> raw
+  return $ findMaxSignalLooped $ newVec1D $ read <$> raw
 
 findMaxSignal :: Array Int Int -> Int
 findMaxSignal = maximum . (<$> getPerm [0, 1, 2, 3, 4]) . tryCombination
@@ -50,8 +50,8 @@ tryCombination arr phases
 tryCombinationLooped :: Array Int Int -> [Int] -> Int
 tryCombinationLooped arr phases 
   = runST $ do
-    arrSTST  <- newST1DArrayM $ replicate 5 (thaw arr)
-    cursorST <- newST1DArray $ replicate 5 0
+    arrSTST  <- newSTM $ newVec1D $ replicate 5 (thaw arr)
+    cursorST <- newSTVec1D $ replicate 5 0
     try True 0 0 0 arrSTST cursorST
   where
     try _ 5 _ m arrSTST cursorST

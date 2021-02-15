@@ -5,7 +5,7 @@ import           Data.Array.Unboxed as AU
 
 import           Data.Map as M hiding (split)
 
-import           Day2 (fromList)
+import           Helpers
 import           InputParser
 
 -- The idea is to encode each entity into an integer, so that we can use an

@@ -15,7 +15,7 @@ day2Part1 = do
   return $ run $ read <$> raw
   where
   run ls = runST $ do
-    arrST <- newST1DArray ls
+    arrST <- newSTVec1D ls
     program1202 arrST
     execute arrST 0
     readArray arrST 0
@@ -28,7 +28,7 @@ day2Part2 = do
   where
     run 100 _ _ = error ""
     run n v ls = runST $ do
-      arrST <- newST1DArray ls
+      arrST <- newSTVec1D ls
       programInit n v arrST
       execute arrST 0
       res   <- readArray arrST 0
