@@ -1,11 +1,11 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Day12 where 
 
 import           Control.Monad
-import           Control.Monad.ST
-import           Control.Monad.Trans.State
-import           Data.Array
+import           Control.Monad.ST.Strict
+import           Data.Array.Unboxed
 import           Data.Array.ST
 import           Data.Maybe
 import           Data.Text hiding (empty, foldl1, length, replicate)
@@ -49,6 +49,9 @@ simulate1000 mat
     forM_ [1..1000] $ const (simulate matST)
     freezeST matST
 
+emptySTMat :: ST s (STMat1D s Int)
+emptySTMat = newSTMat1D $! [replicate 3 0 | _ <- [0..3]]
+
 simulate :: STMat1D s Int -> ST s ()
 simulate matST = do
   velsST <- pucci -- 引力を信じるか。
@@ -58,10 +61,10 @@ simulate matST = do
   forM_ posIndices $ \(i, j) -> do
     v <- readArray matST (i, j + 3)
     p <- readArray matST (i, j)
-    writeArray matST (i, j) (p + v)
+    writeArray matST (i, j) $! (p + v)
   where
     pucci = do
-      newVelST <- newSTMat1D [replicate 3 0 | _ <- [0..3]]
+      newVelST <- emptySTMat
       forM_ comparator $ pucci' newVelST
       return newVelST
     pucci' velST (i, j) 
@@ -81,10 +84,12 @@ energy mat
         pE = sum $ abs <$> [mat ! (i, 0), mat ! (i, 1), mat ! (i, 2)]
         kE = sum $ abs <$> [mat ! (i, 3), mat ! (i, 4), mat ! (i, 5)]
 
+type AxisHashSet = Set[(Int, Int)]
+
 -- Keep the current state separated by axis, then simulate the next state
-simulateWithState :: (Set [(Int, Int)], Set [(Int, Int)], Set [(Int, Int)]) 
+simulateWithState :: (AxisHashSet, AxisHashSet, AxisHashSet) 
   -> STMat1D s Int 
-  -> ST s ((Set [(Int, Int)], Set [(Int, Int)], Set [(Int, Int)]))
+  -> ST s ((AxisHashSet, AxisHashSet, AxisHashSet))
 simulateWithState (x, y, z) matST = do
   x' <- getAxis 0 0
   y' <- getAxis 1 0
