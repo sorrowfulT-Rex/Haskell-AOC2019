@@ -72,7 +72,7 @@ readArrayMaybe arrST index = do
 adjustArray :: (MArray a e m, Ix i) => a i e -> i -> (e -> e) -> m ()
 adjustArray arrST i f = do
   cur <- readArray arrST i
-  writeArray arrST i $ f cur
+  writeArray arrST i $! f cur
 
 
 -- Comparison
