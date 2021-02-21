@@ -8,7 +8,7 @@ import           Data.Maybe
 
 import           Data.Map
 
-import           Helpers hiding (fromList)
+import           Helpers
 import           InputParser
 day9Part1 :: IO [Integer]
 day9Part1 = do
