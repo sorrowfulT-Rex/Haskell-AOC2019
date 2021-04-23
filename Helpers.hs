@@ -113,3 +113,12 @@ formatImage strs
       = putStr " " >> printRow cs
     printRow ('1' : cs)
       = putStr ([chr 9608]) >> printRow cs
+
+formatImageFaithfully :: [String] -> IO ()
+formatImageFaithfully strs
+  = forM_ strs printRow
+  where
+    printRow ""
+      = putStr "\n"
+    printRow (c : cs)
+      = putChar c >> printRow cs

@@ -23,3 +23,9 @@ chunk n xs
       = x : chunk' xs'
       where
         (x, xs') = splitAt n xs
+
+trimPre :: String -> String
+trimPre (' ' : s)
+  = s
+trimPre s
+  = s
