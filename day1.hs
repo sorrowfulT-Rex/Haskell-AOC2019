@@ -1,4 +1,4 @@
-module Day1 where 
+module Day1 where
 
 import           Control.Monad.Trans.State
 
@@ -10,7 +10,7 @@ massOf = (+ (-2)) . (`div` 3)
 day1Part1 :: IO Int
 day1Part1 = do
   raw <- readByLines "day1.txt"
-  return $ sum $ massOf <$> read <$> raw
+  return $ sum $ massOf . read <$> raw
 
 massOf' :: Int -> Int
 massOf' mod
@@ -26,4 +26,4 @@ massOf' mod
 day1Part2 :: IO Int
 day1Part2 = do
   raw <- readByLines "day1.txt"
-  return $ sum $ massOf' <$> read <$> raw
+  return $ sum $ massOf' . read <$> raw

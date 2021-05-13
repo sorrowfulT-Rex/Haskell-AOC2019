@@ -38,8 +38,8 @@ day14Parser
         inDict    = fromList $ zip inN inC
 
 computeOres :: Chems -> State SearchStatus Integer
-computeOres chems = do
-  ores . execState go <$> get
+computeOres chems 
+  = go >> ores <$> get
   where
     go = do
       SS needs stocks ore <- get
@@ -100,5 +100,5 @@ day14Part2 = do
         | otherwise      = inf
         where
           evl = evalState chems initSS {need = fromList [("FUEL", mid)]}
-          mid = (inf + sup) `div` 2 
+          mid = (inf + sup) `div` 2
   print $ go inf sup

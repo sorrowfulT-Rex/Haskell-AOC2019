@@ -4,7 +4,7 @@ readByLines :: FilePath -> IO [String]
 readByLines = fmap lines . readFile
 
 readBy :: Char -> FilePath -> IO [String]
-readBy = (. readFile) . fmap . split
+readBy = (. readFile) . fmap . InputParser.split
 
 split :: Eq a => a -> [a] -> [[a]]
 split x xs 
